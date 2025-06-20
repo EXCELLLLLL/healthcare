@@ -10,7 +10,7 @@ export class ApiService {
     protected token: string | null;
 
     constructor(baseUrl: string = API_BASE_URL) {
-        this.baseUrl = baseUrl;
+        this.baseUrl = baseUrl.replace(/\/$/, '');
         this.token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
         console.log('API Service initialized with base URL:', this.baseUrl);
     }
@@ -61,17 +61,19 @@ export class ApiService {
     }
 
     protected async get<T>(endpoint: string): Promise<T> {
-        console.log('GET request to:', `${this.baseUrl}${endpoint}`);
-        const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        const url = `${this.baseUrl}${endpoint}`;
+        console.log('GET request to:', url);
+        const response = await fetch(url, {
             headers: this.getHeaders(),
         });
         return this.handleResponse<T>(response);
     }
 
     protected async post<T>(endpoint: string, data: any): Promise<T> {
-        console.log('POST request to:', `${this.baseUrl}${endpoint}`);
+        const url = `${this.baseUrl}${endpoint}`;
+        console.log('POST request to:', url);
         console.log('Request data:', data);
-        const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        const response = await fetch(url, {
             method: 'POST',
             headers: this.getHeaders(),
             body: JSON.stringify(data),
@@ -80,9 +82,10 @@ export class ApiService {
     }
 
     protected async put<T>(endpoint: string, data: any): Promise<T> {
-        console.log('PUT request to:', `${this.baseUrl}${endpoint}`);
+        const url = `${this.baseUrl}${endpoint}`;
+        console.log('PUT request to:', url);
         console.log('Request data:', data);
-        const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        const response = await fetch(url, {
             method: 'PUT',
             headers: this.getHeaders(),
             body: JSON.stringify(data),
@@ -91,8 +94,9 @@ export class ApiService {
     }
 
     protected async delete<T>(endpoint: string): Promise<T> {
-        console.log('DELETE request to:', `${this.baseUrl}${endpoint}`);
-        const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        const url = `${this.baseUrl}${endpoint}`;
+        console.log('DELETE request to:', url);
+        const response = await fetch(url, {
             method: 'DELETE',
             headers: this.getHeaders(),
         });
@@ -110,7 +114,8 @@ export class ApiService {
 }
 
 export const apiFetch = async (path: string, options?: RequestInit) => {
-    const url = `${API_BASE_URL}${path}`;
+    const baseUrl = API_BASE_URL.replace(/\/$/, '');
+    const url = `${baseUrl}${path}`;
     return fetch(url, options);
 };
 

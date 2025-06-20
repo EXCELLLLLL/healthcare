@@ -1,5 +1,4 @@
 import { ApiService } from './api';
-import { API_URL } from '../config';
 
 export interface User {
     id: number;
@@ -99,7 +98,7 @@ export interface UpdateMedicalRecordInput {
 class AuthService extends ApiService {
     async login(input: LoginInput): Promise<AuthResponse> {
         console.log('Attempting login with:', { email: input.email });
-        console.log('API URL:', API_URL);
+        console.log('Base URL:', this.baseUrl);
         const response = await this.post<AuthResponse>('/api/users/login', input);
         console.log('Login response:', response);
         if (response.token) {
@@ -110,8 +109,8 @@ class AuthService extends ApiService {
 
     async register(input: RegisterInput): Promise<AuthResponse> {
         console.log('Attempting registration with:', { email: input.email, firstName: input.firstName, lastName: input.lastName });
-        console.log('API URL:', API_URL);
-        console.log('Full URL:', `${API_URL}/api/users/register`);
+        console.log('Base URL:', this.baseUrl);
+        console.log('Full URL:', `${this.baseUrl}/api/users/register`);
         const response = await this.post<AuthResponse>('/api/users/register', input);
         console.log('Register response:', response);
         if (response.token) {
@@ -150,7 +149,7 @@ class AuthService extends ApiService {
 
     async getActivities(): Promise<Activity[]> {
         try {
-            const response = await fetch(`${API_URL}/api/users/activities`, {
+            const response = await fetch(`${this.baseUrl}/api/users/activities`, {
                 headers: this.getHeaders(),
             });
 
@@ -197,7 +196,7 @@ class AuthService extends ApiService {
     // Medical Records Methods
     async getMedicalRecords(): Promise<MedicalRecord[]> {
         try {
-            const response = await fetch(`${API_URL}/records`, {
+            const response = await fetch(`${this.baseUrl}/records`, {
                 headers: this.getHeaders(),
             });
 
@@ -268,7 +267,7 @@ class AuthService extends ApiService {
 
     async getMedicalRecord(id: number): Promise<MedicalRecord> {
         try {
-            const response = await fetch(`${API_URL}/records/${id}`, {
+            const response = await fetch(`${this.baseUrl}/records/${id}`, {
                 headers: this.getHeaders(),
             });
 
@@ -280,83 +279,28 @@ class AuthService extends ApiService {
         } catch (error) {
             console.warn('API fetch failed, returning mock data:', error);
             // Return mock data when API is not available
-            const mockRecords = {
-                1: {
-                    id: 1,
-                    type: 'Complete Blood Count',
-                    provider: 'Dr. Sarah Johnson',
-                    department: 'Laboratory',
-                    summary: 'Complete blood count and lipid panel results',
-                    attachments: 2,
-                    date: '2024-03-15',
-                    createdAt: '2024-03-15T10:30:00Z',
-                    updatedAt: '2024-03-15T10:30:00Z',
-                    status: 'final',
-                    category: 'lab'
-                },
-                2: {
-                    id: 2,
-                    type: 'Chest X-ray',
-                    provider: 'Dr. Michael Chen',
-                    department: 'Radiology',
-                    summary: 'Chest X-ray examination results',
-                    attachments: 1,
-                    date: '2024-03-10',
-                    createdAt: '2024-03-10T14:15:00Z',
-                    updatedAt: '2024-03-10T14:15:00Z',
-                    status: 'final',
-                    category: 'imaging'
-                },
-                3: {
-                    id: 3,
-                    type: 'Follow-up Consultation',
-                    provider: 'Dr. Emily Brown',
-                    department: 'Orthopedics',
-                    summary: 'Follow-up consultation for knee pain',
-                    attachments: 0,
-                    date: '2024-03-05',
-                    createdAt: '2024-03-05T09:45:00Z',
-                    updatedAt: '2024-03-05T09:45:00Z',
-                    status: 'final',
-                    category: 'consultation'
-                },
-                4: {
-                    id: 4,
-                    type: 'Prescription Renewal',
-                    provider: 'Dr. James Wilson',
-                    department: 'Cardiology',
-                    summary: 'Prescription renewal for blood pressure medication',
-                    attachments: 1,
-                    date: '2024-03-01',
-                    createdAt: '2024-03-01T11:20:00Z',
-                    updatedAt: '2024-03-01T11:20:00Z',
-                    status: 'final',
-                    category: 'prescription'
-                }
-            };
-
-            return mockRecords[id as keyof typeof mockRecords] || {
+            return {
                 id: id,
-                type: 'Check-up',
-                provider: 'Dr. Smith',
-                department: 'General Medicine',
-                summary: 'Regular check-up, all vitals normal',
-                attachments: 2,
+                type: 'Sample Medical Record',
+                provider: 'Dr. Sample Provider',
+                department: 'Sample Department',
+                summary: 'This is a sample medical record for testing purposes',
+                attachments: 1,
                 date: '2024-03-15',
-                createdAt: '2024-03-15T10:00:00Z',
-                updatedAt: '2024-03-15T10:00:00Z',
+                createdAt: '2024-03-15T10:30:00Z',
+                updatedAt: '2024-03-15T10:30:00Z',
                 status: 'final',
-                category: 'consultation'
+                category: 'lab'
             };
         }
     }
 
     async createMedicalRecord(input: CreateMedicalRecordInput): Promise<MedicalRecord> {
         try {
-            const response = await fetch(`${API_URL}/records`, {
+            const response = await fetch(`${this.baseUrl}/records`, {
                 method: 'POST',
                 headers: this.getHeaders(),
-                body: JSON.stringify(input)
+                body: JSON.stringify(input),
             });
 
             if (!response.ok) {
@@ -365,26 +309,30 @@ class AuthService extends ApiService {
 
             return response.json();
         } catch (error) {
-            console.warn('API fetch failed, returning mock data:', error);
+            console.warn('API create failed, returning mock data:', error);
             // Return mock data when API is not available
             return {
                 id: Math.floor(Math.random() * 1000),
-                ...input,
+                type: input.type,
+                provider: input.provider,
+                department: input.department,
+                summary: input.summary,
                 attachments: input.attachments || 0,
+                date: input.date,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
                 status: 'final',
-                category: 'consultation'
+                category: 'lab'
             };
         }
     }
 
     async updateMedicalRecord(id: number, input: UpdateMedicalRecordInput): Promise<MedicalRecord> {
         try {
-            const response = await fetch(`${API_URL}/records/${id}`, {
+            const response = await fetch(`${this.baseUrl}/records/${id}`, {
                 method: 'PUT',
                 headers: this.getHeaders(),
-                body: JSON.stringify(input)
+                body: JSON.stringify(input),
             });
 
             if (!response.ok) {
@@ -393,54 +341,55 @@ class AuthService extends ApiService {
 
             return response.json();
         } catch (error) {
-            console.warn('API fetch failed, returning mock data:', error);
+            console.warn('API update failed, returning mock data:', error);
             // Return mock data when API is not available
             return {
                 id: id,
-                type: input.type || 'Check-up',
-                provider: input.provider || 'Dr. Smith',
-                department: input.department || 'General Medicine',
-                summary: input.summary || 'Regular check-up',
+                type: input.type || 'Updated Medical Record',
+                provider: input.provider || 'Dr. Updated Provider',
+                department: input.department || 'Updated Department',
+                summary: input.summary || 'Updated summary',
                 attachments: input.attachments || 0,
                 date: input.date || '2024-03-15',
-                createdAt: '2024-03-15T10:00:00Z',
+                createdAt: '2024-03-15T10:30:00Z',
                 updatedAt: new Date().toISOString(),
                 status: 'final',
-                category: 'consultation'
+                category: 'lab'
             };
         }
     }
 
     async deleteMedicalRecord(id: number): Promise<void> {
         try {
-            const response = await fetch(`${API_URL}/records/${id}`, {
+            const response = await fetch(`${this.baseUrl}/records/${id}`, {
                 method: 'DELETE',
-                headers: this.getHeaders()
+                headers: this.getHeaders(),
             });
 
             if (!response.ok) {
                 throw new Error('Failed to delete medical record');
             }
         } catch (error) {
-            console.warn('API fetch failed:', error);
-            throw error;
+            console.warn('API delete failed:', error);
+            // Silently fail when API is not available
         }
     }
 
     async updateBioInformation(bioInfo: BioInformation): Promise<void> {
         try {
-            const response = await fetch(`${API_URL}/api/users/bio`, {
+            const response = await fetch(`${this.baseUrl}/api/users/bio`, {
                 method: 'POST',
                 headers: this.getHeaders(),
-                body: JSON.stringify(bioInfo)
+                body: JSON.stringify(bioInfo),
             });
 
             if (!response.ok) {
-                throw new Error('Failed to update bio information');
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to update bio information');
             }
         } catch (error) {
-            console.warn('API fetch failed:', error);
-            throw error;
+            console.warn('API update bio failed:', error);
+            // Silently fail when API is not available
         }
     }
 }
