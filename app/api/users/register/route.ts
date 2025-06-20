@@ -1,31 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
-const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:8080';
+const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest) {
     try {
-        const body = await req.json();
+        const { email, password, firstName, lastName } = await req.json();
 
-        const response = await fetch(`${AUTH_SERVICE_URL}/auth/register`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body),
-        });
-
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ message: 'Registration failed' }));
-            return NextResponse.json(error, { status: response.status });
+        // Check if user exists
+        const existingUser = await prisma.user.findUnique({ where: { email } });
+        if (existingUser) {
+            return NextResponse.json({ error: 'Email already registered' }, { status: 409 });
         }
 
-        const data = await response.json();
-        return NextResponse.json(data);
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create user
+        const user = await prisma.user.create({
+            data: { email, password: hashedPassword, firstName, lastName },
+        });
+
+        return NextResponse.json({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName });
     } catch (error) {
-        console.error('Auth service error:', error);
-        return NextResponse.json(
-            { error: 'Registration failed', message: error instanceof Error ? error.message : 'Unknown error' },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: 'Registration failed', message: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
     }
 } 

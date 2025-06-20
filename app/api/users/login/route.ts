@@ -1,31 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
-const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:8080';
+const prisma = new PrismaClient();
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret';
 
 export async function POST(req: NextRequest) {
     try {
-        const body = await req.json();
+        const { email, password } = await req.json();
 
-        const response = await fetch(`${AUTH_SERVICE_URL}/api/users/login`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body),
-        });
-
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ message: 'Login failed' }));
-            return NextResponse.json(error, { status: response.status });
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) {
+            return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
         }
 
-        const data = await response.json();
-        return NextResponse.json(data);
+        const valid = await bcrypt.compare(password, user.password);
+        if (!valid) {
+            return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+        }
+
+        // Generate JWT
+        const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1d' });
+
+        return NextResponse.json({ token, user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName } });
     } catch (error) {
-        console.error('Auth service error:', error);
-        return NextResponse.json(
-            { error: 'Login failed', message: error instanceof Error ? error.message : 'Unknown error' },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: 'Login failed', message: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
     }
 } 

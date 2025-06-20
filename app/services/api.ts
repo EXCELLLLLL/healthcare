@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_AUTH_API_URL || 'http://localhost:8080';
+const API_BASE_URL = '';
 
 export interface ApiError {
     error: string;
